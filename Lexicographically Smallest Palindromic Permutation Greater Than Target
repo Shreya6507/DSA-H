@@ -1,0 +1,161 @@
+class Solution {
+
+    public String lexPalindromicPermutation(String s, String target) {
+
+        int n = s.length();
+
+        // Count characters in s
+        int[] freq = new int[26];
+
+        for (char c : s.toCharArray()) {
+            freq[c - 'a']++;
+        }
+
+        // Check whether a palindromic permutation exists
+        int odd = 0;
+        char middle = 0;
+
+        for (int i = 0; i < 26; i++) {
+            if (freq[i] % 2 == 1) {
+                odd++;
+                middle = (char) ('a' + i);
+            }
+        }
+
+        if (odd > 1) {
+            return "";
+        }
+
+        // Build frequency of characters in the first half
+        int halfLen = n / 2;
+        int[] halfFreq = new int[26];
+
+        for (int i = 0; i < 26; i++) {
+            halfFreq[i] = freq[i] / 2;
+        }
+
+        /*
+         * First try using target's first half exactly.
+         * This is important for odd-length strings because
+         * the middle character may make the palindrome greater.
+         */
+        char[] targetHalf = target.substring(0, halfLen).toCharArray();
+
+        int[] remaining = halfFreq.clone();
+        boolean possible = true;
+
+        for (char c : targetHalf) {
+            if (remaining[c - 'a'] == 0) {
+                possible = false;
+                break;
+            }
+            remaining[c - 'a']--;
+        }
+
+        if (possible) {
+
+            String candidate = buildPalindrome(
+                targetHalf,
+                middle,
+                n
+            );
+
+            if (candidate.compareTo(target) > 0) {
+                return candidate;
+            }
+        }
+
+        /*
+         * target's first half either cannot be formed,
+         * or produces a palindrome <= target.
+         *
+         * Find the smallest first half strictly greater
+         * than target's first half.
+         */
+
+        for (int pivot = halfLen - 1; pivot >= 0; pivot--) {
+
+            remaining = halfFreq.clone();
+
+            // Try to match target's prefix before pivot
+            boolean prefixPossible = true;
+
+            for (int i = 0; i < pivot; i++) {
+
+                int c = target.charAt(i) - 'a';
+
+                if (remaining[c] == 0) {
+                    prefixPossible = false;
+                    break;
+                }
+
+                remaining[c]--;
+            }
+
+            if (!prefixPossible) {
+                continue;
+            }
+
+            // At pivot, choose the smallest character > target[pivot]
+            int targetChar = target.charAt(pivot) - 'a';
+
+            for (int c = targetChar + 1; c < 26; c++) {
+
+                if (remaining[c] == 0) {
+                    continue;
+                }
+
+                char[] half = new char[halfLen];
+
+                // Copy target prefix
+                for (int i = 0; i < pivot; i++) {
+                    half[i] = target.charAt(i);
+                }
+
+                // Make the first greater choice
+                half[pivot] = (char) ('a' + c);
+                remaining[c]--;
+
+                // Fill the rest with smallest possible characters
+                int index = pivot + 1;
+
+                for (int x = 0; x < 26; x++) {
+                    while (remaining[x] > 0) {
+                        half[index++] = (char) ('a' + x);
+                        remaining[x]--;
+                    }
+                }
+
+                return buildPalindrome(half, middle, n);
+            }
+        }
+
+        return "";
+    }
+
+    private String buildPalindrome(
+        char[] half,
+        char middle,
+        int n
+    ) {
+
+        StringBuilder result = new StringBuilder();
+
+        // First half
+        for (char c : half) {
+            result.append(c);
+        }
+
+        // Middle character
+        if (n % 2 == 1) {
+            result.append(middle);
+        }
+
+        // Reverse of first half
+        for (int i = half.length - 1; i >= 0; i--) {
+            result.append(half[i]);
+        }
+
+        return result.toString();
+    }
+}
